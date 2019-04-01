@@ -1,0 +1,13 @@
+This work-in-progress project is a Ray Tracer (computer graphics) developed by me (Didier Muñoz) for my Master Thesis in Computer Science.
+
+Basically consists of a simple pipeline where:
+-Scenes descriptions are loaded.
+-Acceleration structures are constructed (or will be).
+-Rays are traced.
+-Colors are calculated.
+-And the resulting image is stored.
+
+Currently acceleration structures are non-existent, but it is the next step in the development.
+
+All the code presented was written in C++11, and the sole library required is:
+-FreeImage
