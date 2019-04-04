@@ -1,8 +1,9 @@
-Main: Main.cpp MyML.h RayTracer.h MyML.cpp DobleFor.h RayTracer.cpp
-	c++ -std=c++11 -stdlib=libc++ -Wall -O2 -o Main Main.cpp -L. -lfreeimage
+SRC_DIR=./src
+LIB_DIR=$(SRC_DIR)/lib
+INCL_DIR=$(SRC_DIR)/include
+BIN_DIR=./bin
 
-#RayTracer.o: RayTracer.cpp RayTracer.h MyML.o
-#	g++ -Wall -c RayTracer.cpp
+LINK_DEP= -lfreeimage
 
-#MyML.o: MyML.h MyML.cpp
-#	g++ -Wall -c MyML.cpp
+$(BIN_DIR)/RD_RT: $(SRC_DIR)/Main.cpp $(INCL_DIR)/MyML.h $(INCL_DIR)/RayTracer.h $(INCL_DIR)/DobleFor.h
+	c++ -std=c++11 -stdlib=libc++ -Wall -O2 -o $(BIN_DIR)/RD_RT $(SRC_DIR)/Main.cpp -I$(INCL_DIR) -L$(LIB_DIR) $(LINK_DEP)
