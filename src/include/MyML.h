@@ -1,3 +1,5 @@
+// Simple math library by Didier Muñoz
+// This is a simple linear algebra library I created for the Ray Tracer
 
 #ifndef MY_ML
 #define MY_ML
