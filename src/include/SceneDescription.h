@@ -120,6 +120,10 @@ class Triangle : public Object<T>{
 		Triangle(const Vec3<T>& amb_, const Vec3<T>& dif_, const Vec3<T>& spe_, const Vec3<T>& emi_, const T& shi_, 
 					const Vec3<T>& vert0, const Vec3<T>& vert1, const Vec3<T>& vert2);
 		bool intersect(const Ray<T>& ray_, Intersection<T>& hit_info) const;
+
+		inline Vec3<T> sizes(void) const; 	// This method returns the size in each axis
+		inline Vec3<T> infimum(void) const;  // Returns the infimum
+		inline Vec3<T> supremum(void) const; // Returns the supremum
 };
 
 template <typename T>
@@ -135,6 +139,9 @@ class Sphere : public Object<T>{
 					const Vec3<T>& center_, const T& radius_, const Mat4<T>& trans_, const Mat4<T>& inv_trans);
 		bool intersect(const Ray<T>& ray_, Intersection<T>& hit_info) const;
 		
+		inline Vec3<T> sizes(void) const; 	// This method returns the size in each axis
+		inline Vec3<T> infimum(void) const;  // Returns the infimum
+		inline Vec3<T> supremum(void) const; // Returns the supremum
 };
 
 ////////////Light
@@ -182,11 +189,17 @@ class PointLight : public Light<T>{
 
 template <typename T>
 struct Geometry{
+public:
 	std::vector <Triangle<T> > Triangles;
 	std::vector <Sphere<T> > Spheres;
+	Vec3<T> Infimum, Supremum; // These two denote the boundaries
+	Vec3<T> MaxSz; // This holds the max size in each axis found for a single primitive
 
 	inline void add(const Triangle<T>& tri_);
 	inline void add(const Sphere<T>& sph_);
+private:
+	inline void updateMetaInfo(const Triangle<T>& tri);
+	inline void updateMetaInfo(const Sphere<T>& sph);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -326,7 +339,51 @@ bool Triangle<T>::intersect(const Ray<T>& ray_, Intersection<T>& hit_info) const
 	return true;
 }
 
-template <typename T>
+template <typename T> inline 
+Vec3<T> Triangle<T> :: sizes(void) const{
+	Vec3<T> sz(abs(Vertices[2].x() - Vertices[0].x()),
+					abs(Vertices[2].y() - Vertices[0].y()), 
+					abs(Vertices[2].z() - Vertices[0].z()));
+	for(int i=0; i < 2; ++i){
+		Vec3<T> aux(abs(Vertices[i].x() - Vertices[i+1].x()),
+						abs(Vertices[i].y() - Vertices[i+1].y()), 
+						abs(Vertices[i].z() - Vertices[i+1].z()));
+		if(aux.x() > sz.x()) sz[0] = aux.x();
+		if(aux.y() > sz.y()) sz[1] = aux.y();
+		if(aux.z() > sz.z()) sz[2] = aux.z();
+	}
+	return sz;
+}
+
+template <typename T> inline 
+Vec3<T> Triangle<T> :: infimum(void) const{
+	Vec3<T> inf = Vertices[0];
+
+	if(Vertices[1].x() < inf.x()) inf[0] = Vertices[1].x() ;
+	if(Vertices[1].y() < inf.y()) inf[1] = Vertices[1].y() ;
+	if(Vertices[1].z() < inf.z()) inf[2] = Vertices[1].z() ;
+	if(Vertices[2].x() < inf.x()) inf[0] = Vertices[2].x() ;
+	if(Vertices[2].y() < inf.y()) inf[1] = Vertices[2].y() ;
+	if(Vertices[2].z() < inf.z()) inf[2] = Vertices[2].z() ;
+
+	return inf;
+}
+
+template <typename T> inline 
+Vec3<T> Triangle<T> :: supremum(void) const{
+	Vec3<T> sup = Vertices[0];
+
+	if(Vertices[1].x() > sup.x()) sup[0] = Vertices[1].x() ;
+	if(Vertices[1].y() > sup.y()) sup[1] = Vertices[1].y() ;
+	if(Vertices[1].z() > sup.z()) sup[2] = Vertices[1].z() ;
+	if(Vertices[2].x() > sup.x()) sup[0] = Vertices[2].x() ;
+	if(Vertices[2].y() > sup.y()) sup[1] = Vertices[2].y() ;
+	if(Vertices[2].z() > sup.z()) sup[2] = Vertices[2].z() ;
+
+	return sup;
+}
+
+template <typename T> inline
 Sphere<T>::Sphere(const Vec3<T>& amb, const Vec3<T>& dif, const Vec3<T>& spe, const Vec3<T>& emi, const T& shi, 
 							const Vec3<T>& center_, const T& radius_, const Mat4<T>& trans_, const Mat4<T>& inv_trans)
 							: Object<T>(amb, dif, spe, emi, shi){
@@ -336,7 +393,7 @@ Sphere<T>::Sphere(const Vec3<T>& amb, const Vec3<T>& dif, const Vec3<T>& spe, co
 	InvTransform = inv_trans;
 }
 
-template <typename T>
+template <typename T> inline
 bool Sphere<T>::intersect(const Ray<T>& ori_ray, Intersection<T>& hit_info) const{
 	Ray<T> ray_(toVec3(InvTransform * myml::homogeneous(ori_ray.origin())), 
 					toVec3(InvTransform * Vec4<T>(ori_ray.direction())));
@@ -377,6 +434,21 @@ bool Sphere<T>::intersect(const Ray<T>& ori_ray, Intersection<T>& hit_info) cons
 	hit_info.setNormalVec(normal_);
 	hit_info.setHitObject(this);
 	return true;
+}
+
+template <typename T> inline 
+Vec3<T> Sphere<T> :: sizes(void) const{
+	return  static_cast<T>(2.) * Vec3<T>(Radius, Radius, Radius);
+}
+
+template <typename T> inline 
+Vec3<T> Sphere<T> :: infimum(void) const{
+	return Center - Vec3<T>(Radius, Radius, Radius);
+}
+
+template <typename T> inline 
+Vec3<T> Sphere<T> :: supremum(void) const{
+	return Center + Vec3<T>(Radius, Radius, Radius);
 }
 
 ///////////Light
@@ -429,6 +501,16 @@ void Geometry<T>::add(const Triangle<T>& tri_){
 template <typename T> inline
 void Geometry<T>::add(const Sphere<T>& sph_){
 	Spheres.push_back(sph_);
+}
+
+template <typename T> inline 
+void updateMetaInfo(const Triangle<T>& tri){
+	
+}
+
+template <typename T> inline 
+void updateMetaInfo(const Sphere<T>& sph){
+
 }
 
 #endif
